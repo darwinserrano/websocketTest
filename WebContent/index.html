@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style type="text/css">
+	.chat {
+		border: 1px solid black;
+		width: 80%;
+		height: 500px;
+	}
+</style>
+<script type="text/javascript">
+	var socket = null;
+	
+	
+	var conectar = function() {
+		socket = new WebSocket("ws://" + location.host + "/websocketTest/actions");
+
+		socket.onopen = function() {
+			var str = {
+					user: document.querySelector("#name").value,
+					msg: "se ha conectado al servidor"
+			};
+			
+			document.querySelector("#name").readOnly = true;
+			document.querySelector("#btnConectar").disabled = true;
+			document.querySelector("#btnEnviar").disabled = false;
+			document.querySelector("#msgText").focus();
+			socket.send(JSON.stringify(str));
+		};
+
+		socket.onmessage = function(event) {
+			var msg = JSON.parse(event.data);
+			var content = document.querySelector("#divContent");
+			if(msg.name){
+				content.innerHTML += "<span><b>" + msg.name + "</b>: " + msg.msg + "</span><br>";
+			} else if(msg.user) {
+				content.innerHTML += "<i>" + msg.user + " " + msg.msg + "</i><br>";
+			} else {
+				content.innerHTML += "<i>" + msg.msg + "</i><br>";
+			}
+		}
+		
+		socket.onclose = function () {
+			document.querySelector("#name").readOnly = false;
+			document.querySelector("#btnConectar").disabled = false;
+			document.querySelector("#btnEnviar").disabled = true;
+		}
+		
+		window.onbeforeunload = function() {
+		    socket.close();
+		};
+	}
+
+	var enviar = function() {
+		var user = document.querySelector("#name").value;
+		var msg = document.querySelector("#msgText");
+		var str = {
+			name : user,
+			msg : msg.value
+		};
+		if (socket) {
+			socket.send(JSON.stringify(str));
+			msg.value = "";
+		} else
+			alert("No esta conectado al servidor");
+	}
+	
+	var desconectar = function() {
+		if(socket){
+			socket.close();
+			socket = null;
+		}
+	}
+</script>
+</head>
+<body>
+	<h1>WebSocket</h1>
+	<form name="formConnect" onsubmit="return false;">
+		Nombre:	<input id="name">
+		<button id="btnConectar" onclick="conectar()">Conectar</button>
+	</form>
+	<br> 
+	<form name="formMessage" onsubmit="return false;">
+		Mensaje: <input id="msgText">
+		<button id="btnEnviar" onclick="enviar()" disabled="disabled">Enviar</button>
+	</form>
+	<button id="btnDesconectar" onclick="desconectar()">Desconectar</button>
+	<br><br>
+	Chat
+	<div id="divContent" class="chat"></div>
+
+</body>
+</html>
